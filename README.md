@@ -23,6 +23,34 @@ interne Verwaltungssystem der **DMD Studio GmbH**.
 
 ## Schnellstart
 
+### Variante 1: Web-GUI Wizard (empfohlen, alle Plattformen)
+
+Startet einen lokalen Web-Server mit einer grafischen Schritt-für-Schritt-
+Oberfläche — kein Terminal-Know-how nötig:
+
+```bash
+node installer.js
+```
+
+Der Browser öffnet sich automatisch unter `http://localhost:4711`.
+Der Wizard prüft Voraussetzungen, installiert Pakete, fragt Supabase-Keys
+ab und führt den Build-Test durch.
+
+### Variante 2: Kommandozeile
+
+**Linux / macOS:**
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+**Windows (PowerShell):**
+```powershell
+.\install.ps1
+```
+
+### Manuelle Einrichtung (ohne Script)
+
 ### Voraussetzungen
 
 - Node.js ≥ 20

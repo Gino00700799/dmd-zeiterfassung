@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
+    "install:gui": "node installer.js",
     "supabase:migrate": "supabase db push",
     "supabase:seed": "supabase db seed",
     "supabase:functions:serve": "supabase functions serve",

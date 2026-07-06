@@ -194,3 +194,123 @@ cd dmd-zeiterfassung
 # 4. App starten
 npm run dev
 ```
+
+---
+
+## Erweiterung: E-Mail-Domain-Beschränkung & Resend Integration
+
+Der aktuelle Prototyp erlaubt Login mit allen in Supabase Auth angelegten Usern.
+Für den Produktivbetrieb sollte der Login auf Mitarbeiter der DMD Studio GmbH
+beschränkt werden. Hierzu lassen sich zwei Ansätze kombinieren:
+
+### 1. Domain-Beschränkung in Supabase Auth
+
+Im Supabase Dashboard unter **Authentication → Sign In / Providers → Email**:
+- **Enable Email Provider:** ✅
+- **Confirm Email:** ✅ (User müssen ihre E-Mail bestätigen)
+- **Double Confirm Email Changes:** ✅
+
+Zusätzlich im Dashboard unter **Authentication → URL Configuration**:
+- **Site URL:** `https://app.dmd-studio.de` (Produktiv-URL)
+- **Redirect URLs:** alle erlaubten URLs eintragen
+
+Um nur Registrierungen mit der Domain `@dmd-studio.de` zuzulassen, kann eine
+**Custom Auth Hook (Postgres Function)** eingesetzt werden:
+
+```sql
+-- Auth Hook: Nur @dmd-studio.de E-Mails erlauben
+-- Im Supabase Dashboard unter Authentication → Auth Hooks → Before User Created
+create or replace function public.validate_email_domain()
+returns jsonb
+language plpgsql
+security definer
+as $$
+declare
+  user_email text;
+begin
+  user_email := auth.email();
+  if user_email not like '%@dmd-studio.de' then
+    raise exception 'Nur E-Mails mit der Domain @dmd-studio.de sind erlaubt';
+  end if;
+  return jsonb_build_object('status', 'allowed');
+end;
+$$;
+```
+
+### 2. Transaktions-E-Mails mit Resend
+
+Supabase nutzt standardmäßig den eingebauten E-Mail-Service (begrenzt auf
+4 E-Mails pro Stunde im Free-Tier). Für zuverlässige Transaktions-E-Mails
+(Willkommens-Mail, Passwort-Reset, Genehmigungs-Benachrichtigungen) empfiehlt
+sich die Integration von **Resend** (https://resend.com):
+
+**Schritt 1: Resend Account & API Key**
+- Konto auf https://resend.com erstellen (Free-Tier: 3.000 E-Mails/Monat)
+- API Key generieren
+- Sender-Domain `dmd-studio.de` verifizieren (DNS-Records)
+
+**Schritt 2: Supabase SMTP konfigurieren**
+Im Supabase Dashboard unter **Authentication → SMTP Settings**:
+- Custom SMTP aktivieren
+- Host: `smtp.resend.com`
+- Port: `465`
+- Username: `resend`
+- Password: `<RESEND_API_KEY>`
+- Sender E-Mail: `noreply@dmd-studio.de`
+- Mindestens TLS
+
+**Schritt 3: E-Mail-Templates anpassen**
+Im Supabase Dashboard unter **Authentication → Email Templates**:
+- Confirm Signup: Willkommens-Mail mit Hinweis auf Zeiterfassung
+- Reset Password: Passwort-Reset-Link
+- Magic Link: Optional für passwortlosen Login
+
+**Schritt 4: Custom Edge Function (optional)**
+Für fachliche Benachrichtigungen (z.B. „Zeitbuchung genehmigt/abgelehnt")
+kann eine eigene Edge Function Resend direkt anbinden:
+
+```typescript
+// supabase/functions/notify-employee/index.ts
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+Deno.serve(async (req: Request) => {
+  const { employeeEmail, subject, message } = await req.json();
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "Zeiterfassung <noreply@dmd-studio.de>",
+      to: employeeEmail,
+      subject: subject,
+      html: `<p>${message}</p><hr><p>DMD Studio GmbH – Zeiterfassung</p>`,
+    }),
+  });
+
+  return new Response(JSON.stringify({ success: res.ok }), {
+    headers: { "Content-Type": "application/json" },
+  });
+});
+```
+
+Deploy:
+```bash
+supabase functions deploy notify-employee
+# RESEND_API_KEY als Secret setzen:
+supabase secrets set RESEND_API_KEY=re_xxxxx
+```
+
+### Zusammenfassung: Login- & E-Mail-Konfiguration
+
+| Komponente | Zweck | Free-Tier |
+|------------|-------|-----------|
+| Supabase Auth (Email/Password) | Login & Registrierung | ✅ inklusive |
+| Auth Hook (`validate_email_domain`) | Nur `@dmd-studio.de` erlauben | ✅ inklusive |
+| Resend SMTP | Zuverlässige Transaktions-E-Mails | 3.000/Monat |
+| Custom Edge Function | Fachliche Benachrichtigungen | ✅ inklusive |
+
+> **Hinweis:** Diese Erweiterungen sind nicht Teil des Prototyp-Umfangs der
+> Projektarbeit, sondern dokumentieren den Weg zum Produktivbetrieb.

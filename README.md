@@ -143,6 +143,7 @@ zeiterfassung-modul/
 | `docs/05_Technische_Dokumentation.md` | Architektur, Stack, Deployment |
 | `docs/06_Kurzanleitung.md` | Anwenderdokumentation |
 | `docs/07_Testprotokoll.md` | Abnahmetests gemäß Akzeptanzkriterien |
+| `docs/08_Abnahmekriterien_Nachweis.md` | Nachweis der Erfüllung jedes Kriteriums mit Testergebnissen |
 
 ---
 

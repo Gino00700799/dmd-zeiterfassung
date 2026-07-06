@@ -159,3 +159,38 @@ curl -H "Authorization: Bearer <JWT>" \
 
 Projektarbeit – DMD Studio GmbH / SBSZ Bamberg.
 Alle Rechte bei den Projektbeteiligten.
+
+---
+
+## GitHub-Setup
+
+### Repository auf GitHub erstellen und hochladen
+
+```bash
+# 1. Auf GitHub ein neues Repository erstellen (ohne README/.gitignore)
+
+# 2. Remote hinzufügen (URL durch deine ersetzen)
+git remote add origin https://github.com/DEIN-USERNAME/dmd-zeiterfassung.git
+
+# 3. Hochladen
+git branch -M main
+git push -u origin main
+```
+
+### Für neue Entwickler (Clone & Install)
+
+```bash
+# 1. Repository klonen
+git clone https://github.com/DEIN-USERNAME/dmd-zeiterfassung.git
+cd dmd-zeiterfassung
+
+# 2. Install-Script ausführen (prüft Node, installiert Pakete,
+#    fragt Supabase-Keys ab, führt Build-Test durch)
+./install.sh
+
+# 3. SQL-Migrationen im Supabase Dashboard ausführen
+#    (siehe install.sh Ausgabe oder README oben)
+
+# 4. App starten
+npm run dev
+```

@@ -3,7 +3,7 @@
 # ============================================================
 # Ausführen in PowerShell:
 #   .\install.ps1
-# Oder per Rechtsklick → "Mit PowerShell ausführen"
+# Prüft Node.js/npm und installiert automatisch, falls fehlend.
 # ============================================================
 
 $ErrorActionPreference = "Stop"
@@ -20,31 +20,94 @@ Write-Host "  DMD Zeiterfassung - Installation (Windows)" -ForegroundColor Blue
 Write-Host "==========================================================" -ForegroundColor Blue
 Write-Host ""
 
-# --- 1. Prerequisites ---
-Write-Info "Pruefe Systemvoraussetzungen..."
-
-try {
-    $nodeVersion = node --version 2>$null
-    if ($nodeVersion -match "v(\d+)") {
-        $major = [int]$Matches[1]
-        if ($major -ge 20) {
-            Write-Ok "Node.js $nodeVersion"
-        } else {
-            Write-Err "Node.js $nodeVersion - Version 20+ erforderlich"
-            exit 1
-        }
-    } else { throw }
-} catch {
-    Write-Err "Node.js nicht gefunden. Installieren: https://nodejs.org/"
-    exit 1
+# --- 0. Node.js / npm pruefen und ggf. installieren ---
+function Test-Node {
+    try { $v = node --version 2>$null; return $v } catch { return $null }
+}
+function Test-Npm {
+    try { $v = npm --version 2>$null; return $v } catch { return $null }
 }
 
-try {
-    $npmVersion = npm --version 2>$null
-    Write-Ok "npm v$npmVersion"
-} catch {
-    Write-Err "npm nicht gefunden."
-    exit 1
+$nodeVer = Test-Node
+$npmVer = Test-Npm
+
+if (-not $nodeVer) {
+    Write-Warn "Node.js nicht gefunden."
+    Write-Host ""
+    Write-Info "Node.js wird automatisch installiert..."
+    Write-Info "Dies kann 1-2 Minuten dauern."
+    Write-Host ""
+
+    # Methode 1: winget (Windows 10/11 ab Werk)
+    $winget = Get-Command winget -ErrorAction SilentlyContinue
+    if ($winget) {
+        Write-Info "Installiere Node.js via winget..."
+        try {
+            winget install OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements
+            Write-Ok "Node.js via winget installiert!"
+        } catch {
+            Write-Warn "winget fehlgeschlagen, versuche Download..."
+            goto :download
+        }
+    } else {
+        Write-Info "winget nicht verfügbar, lade Node.js herunter..."
+    }
+
+    # Methode 2: Direkter Download + MSI-Installation
+    if (-not (Test-Node)) {
+        $nodeUrl = "https://nodejs.org/dist/v22.23.1/node-v22.23.1-x64.msi"
+        $msiPath = "$env:TEMP\nodejs.msi"
+
+        Write-Info "Lade Node.js LTS herunter..."
+        try {
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            Invoke-WebRequest -Uri $nodeUrl -OutFile $msiPath
+            Write-Ok "Download abgeschlossen."
+        } catch {
+            Write-Err "Download fehlgeschlagen: $_"
+            Write-Err "Bitte installiere Node.js manuell: https://nodejs.org/"
+            exit 1
+        }
+
+        Write-Info "Installiere Node.js..."
+        Start-Process msiexec.exe -ArgumentList "/i `"$msiPath`" /qb" -Wait
+        Remove-Item $msiPath -ErrorAction SilentlyContinue
+
+        # PATH für diese Session aktualisieren
+        $env:PATH = "$env:ProgramFiles\nodejs;$env:LOCALAPPDATA\npm;$env:PATH"
+    }
+
+    # Erneut prüfen
+    $nodeVer = Test-Node
+    if ($nodeVer) {
+        Write-Ok "Node.js $nodeVer installiert!"
+        $npmVer = Test-Npm
+        if ($npmVer) { Write-Ok "npm v$npmVer" }
+    } else {
+        Write-Err "Node.js Installation fehlgeschlagen."
+        Write-Err "Bitte installiere Node.js manuell: https://nodejs.org/"
+        Write-Err "Starte dann dieses Script erneut."
+        exit 1
+    }
+} else {
+    Write-Ok "Node.js $nodeVer"
+    if ($npmVer) {
+        Write-Ok "npm v$npmVer"
+    } else {
+        Write-Err "npm nicht gefunden (sollte mit Node.js kommen)."
+        Write-Err "Bitte Node.js neu installieren: https://nodejs.org/"
+        exit 1
+    }
+}
+
+# Node-Version prüfen (≥ 20)
+if ($nodeVer -match "v(\d+)") {
+    $major = [int]$Matches[1]
+    if ($major -lt 20) {
+        Write-Err "Node.js $nodeVer - Version 20+ erforderlich"
+        Write-Err "Bitte aktualisieren: https://nodejs.org/"
+        exit 1
+    }
 }
 
 try {
@@ -56,7 +119,7 @@ try {
 
 Write-Host ""
 
-# --- 2. npm install ---
+# --- 1. npm install ---
 Write-Info "Installiere Abhaengigkeiten..."
 Set-Location $ProjectRoot
 npm install
@@ -68,7 +131,7 @@ $pkgCount = (Get-ChildItem node_modules -Directory).Count
 Write-Ok "$pkgCount Pakete installiert"
 Write-Host ""
 
-# --- 3. Supabase config ---
+# --- 2. Supabase config ---
 Write-Host "----------------------------------------------------------" -ForegroundColor DarkGray
 Write-Host "  Supabase-Konfiguration" -ForegroundColor Cyan
 Write-Host "----------------------------------------------------------" -ForegroundColor DarkGray
@@ -112,7 +175,7 @@ if (-not $skipEnv) {
     Write-Host ""
 }
 
-# --- 4. Build test ---
+# --- 3. Build test ---
 Write-Host "----------------------------------------------------------" -ForegroundColor DarkGray
 Write-Host "  Build-Test" -ForegroundColor Cyan
 Write-Host "----------------------------------------------------------" -ForegroundColor DarkGray

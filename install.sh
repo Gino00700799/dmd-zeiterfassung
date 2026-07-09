@@ -3,6 +3,7 @@
 # DMD Zeiterfassung — Linux/macOS Installation (Bash)
 # ============================================================
 # Ausführen: ./install.sh
+# Prüft Node.js/npm und installiert automatisch, falls fehlend.
 # ============================================================
 
 set -e
@@ -27,30 +28,97 @@ echo -e "${BLUE}  Projektzeiterfassung & Projekt-Controlling${NC}"
 echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
 echo ""
 
-# ─── 1. Prerequisites ─────────────────────────────────────
+# ─── 0. Node.js / npm prüfen und ggf. installieren ───────
 info "Prüfe Systemvoraussetzungen…"
 
+install_node_linux() {
+  echo ""
+  warn "Node.js nicht gefunden oder zu alt."
+  info "Versuche Node.js automatisch zu installieren…"
+  echo ""
+
+  # Debian/Ubuntu
+  if command -v apt-get &>/dev/null; then
+    info "Erkannt: Debian/Ubuntu (apt)"
+    echo ""
+    info "sudo wird benötigt für die Installation."
+    echo ""
+    curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+    return 0
+  fi
+
+  # Fedora/RHEL/CentOS
+  if command -v dnf &>/dev/null; then
+    info "Erkannt: Fedora/RHEL (dnf)"
+    curl -fsSL https://rpm.nodesource.com/setup_22.x | sudo -E bash -
+    sudo dnf install -y nodejs
+    return 0
+  fi
+
+  # Arch/Manjaro
+  if command -v pacman &>/dev/null; then
+    info "Erkannt: Arch/Manjaro (pacman)"
+    sudo pacman -S --noconfirm nodejs npm
+    return 0
+  fi
+
+  # macOS (Homebrew)
+  if command -v brew &>/dev/null; then
+    info "Erkannt: macOS (Homebrew)"
+    brew install node@22
+    brew link node@22 --force --overwrite
+    return 0
+  fi
+
+  # Fallback: nvm (Node Version Manager)
+  if command -v nvm &>/dev/null || [ -s "$HOME/.nvm/nvm.sh" ]; then
+    info "Erkannt: nvm (Node Version Manager)"
+    [ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh"
+    nvm install 22
+    nvm use 22
+    return 0
+  fi
+
+  # Nichts gefunden
+  err "Konnte Node.js nicht automatisch installieren."
+  echo ""
+  echo "Bitte installiere Node.js 20+ manuell:"
+  echo "  → https://nodejs.org/"
+  echo "  → oder: curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs"
+  echo "  → oder: nvm install 22 (mit nvm)"
+  exit 1
+}
+
+# Node.js prüfen
 if command -v node &>/dev/null; then
   NODE_VERSION=$(node --version)
   NODE_MAJOR=$(echo "$NODE_VERSION" | sed 's/v//' | cut -d. -f1)
   if [ "$NODE_MAJOR" -ge 20 ]; then
     ok "Node.js $NODE_VERSION"
   else
-    err "Node.js $NODE_VERSION — Version 20+ erforderlich"
-    exit 1
+    warn "Node.js $NODE_VERSION — Version 20+ erforderlich"
+    install_node_linux
+    # Nach Installation neu prüfen
+    NODE_VERSION=$(node --version)
+    ok "Node.js $NODE_VERSION (neu installiert)"
   fi
 else
-  err "Node.js nicht gefunden → https://nodejs.org/"
-  exit 1
+  install_node_linux
+  NODE_VERSION=$(node --version)
+  ok "Node.js $NODE_VERSION (neu installiert)"
 fi
 
+# npm prüfen
 if command -v npm &>/dev/null; then
   ok "npm $(npm --version)"
 else
-  err "npm nicht gefunden"
+  err "npm nicht gefunden (sollte mit Node.js kommen)"
+  err "Bitte Node.js neu installieren: https://nodejs.org/"
   exit 1
 fi
 
+# git prüfen (optional)
 if command -v git &>/dev/null; then
   ok "git $(git --version | cut -d' ' -f3)"
 else
@@ -59,14 +127,14 @@ fi
 
 echo ""
 
-# ─── 2. npm install ───────────────────────────────────────
+# ─── 1. npm install ───────────────────────────────────────
 info "Installiere Node.js-Abhängigkeiten…"
 npm install
 PKG_COUNT=$(ls node_modules | wc -l)
 ok "$PKG_COUNT Pakete installiert"
 echo ""
 
-# ─── 3. Supabase config ───────────────────────────────────
+# ─── 2. Supabase config ───────────────────────────────────
 echo -e "${BLUE}───────────────────────────────────────────────────────────${NC}"
 echo -e "${CYAN}  Supabase-Konfiguration${NC}"
 echo -e "${BLUE}───────────────────────────────────────────────────────────${NC}"
@@ -119,7 +187,7 @@ EOF
   echo ""
 fi
 
-# ─── 4. Build test ────────────────────────────────────────
+# ─── 3. Build test ────────────────────────────────────────
 echo -e "${BLUE}───────────────────────────────────────────────────────────${NC}"
 echo -e "${CYAN}  Build-Test${NC}"
 echo -e "${BLUE}───────────────────────────────────────────────────────────${NC}"

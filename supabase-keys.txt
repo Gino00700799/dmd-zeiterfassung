@@ -1,9 +1,0 @@
-Supabase Keys für DMD Zeiterfassung
-===================================
-
-Project URL: https://jyorppyxgctgkslllftc.supabase.co
-Anon Key:    sb_publishable_xPbWj0wMLXmoYGygaCj8qQ_4mwosYM-
-
-Diese Keys in die .env.local eintragen:
-NEXT_PUBLIC_SUPABASE_URL=https://jyorppyxgctgkslllftc.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_xPbWj0wMLXmoYGygaCj8qQ_4mwosYM-

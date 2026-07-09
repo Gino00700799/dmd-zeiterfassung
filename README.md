@@ -44,10 +44,20 @@ chmod +x install.sh
 ./install.sh
 ```
 
-**Windows (PowerShell):**
-```powershell
-.\install.ps1
-```
+**Windows 10/11:**
+- **Am einfachsten:** Doppelklick auf `install.cmd` — wählt automatisch die beste Methode
+- **Oder PowerShell:**
+  ```powershell
+  .\install.ps1
+  ```
+- **Oder Web-GUI:**
+  ```cmd
+  node installer.js
+  ```
+
+> **Hinweis:** `install.sh` ist nur für Linux/macOS und funktioniert nicht
+> auf Windows (CMD unterstützt keine Bash-Syntax). Auf Windows bitte
+> `install.cmd` oder `install.ps1` verwenden.
 
 ### Manuelle Einrichtung (ohne Script)
 

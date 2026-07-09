@@ -80,7 +80,7 @@ export function statusLabel(status: string): string {
 export function statusBadge(status: string): string {
   const map: Record<string, string> = {
     draft: "bg-slate-100 text-slate-600",
-    submitted: "bg-blue-100 text-blue-700",
+    submitted: "bg-green-100 text-green-700",
     approved: "bg-green-100 text-green-800",
     rejected: "bg-red-100 text-red-700",
     planned: "bg-amber-100 text-amber-800",

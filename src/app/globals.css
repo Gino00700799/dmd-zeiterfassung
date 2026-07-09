@@ -19,7 +19,7 @@
     @apply inline-flex items-center justify-center gap-2 rounded-sm px-4 py-2.5 text-sm font-medium transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply btn bg-tertiary text-on-tertiary hover:bg-dmd-700 hover:shadow-md active:scale-[0.98];
+    @apply btn bg-tertiary text-on-tertiary hover:bg-brand-700 hover:shadow-md active:scale-[0.98];
   }
   .btn-secondary {
     @apply btn bg-neutral text-text-secondary border border-border hover:border-border-hover hover:text-text-primary;
@@ -81,7 +81,7 @@
     @apply badge bg-slate-100 text-slate-600;
   }
   .badge-info {
-    @apply badge bg-blue-100 text-blue-700;
+    @apply badge bg-green-100 text-green-700;
   }
 
   /* Tables */

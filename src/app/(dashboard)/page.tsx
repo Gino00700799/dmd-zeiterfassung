@@ -151,7 +151,7 @@ export default function DashboardPage() {
           value={`${Math.round(totalBookedHours)} h`}
           subtitle={`${projects.length} Projekte`}
           icon={<Clock size={20} />}
-          colorClass="bg-blue-50 text-tertiary"
+          colorClass="bg-green-50 text-tertiary"
         />
         <StatCard
           label="Umsatz (verrechenbar)"
@@ -230,13 +230,13 @@ export default function DashboardPage() {
               <Bar
                 dataKey="budget"
                 name="Budget (Soll)"
-                fill="#dbeafe"
+                fill="#dcfce7"
                 radius={[4, 4, 0, 0]}
               />
               <Bar
                 dataKey="gebucht"
                 name="Gebucht (Ist)"
-                fill="#2563eb"
+                fill="#3da85e"
                 radius={[4, 4, 0, 0]}
               />
             </BarChart>
@@ -339,7 +339,7 @@ export default function DashboardPage() {
               <Bar
                 dataKey="auslastung"
                 name="Auslastung"
-                fill="#7c3aed"
+                fill="#51c878"
                 radius={[4, 4, 0, 0]}
               />
             </BarChart>
